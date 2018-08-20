@@ -381,8 +381,38 @@ var __metadata = (undefined && undefined.__metadata) || function (k, v) {
 
 var WebSocketService = /** @class */ (function () {
     function WebSocketService() {
+        var _this = this;
         // private webSocket;
         this.ws = new WebSocket('wss://' + location.host + '/player');
+        this.stop = function () {
+            console.info('[stop] Stop video playback');
+            if (_this.webRtcPeer) {
+                _this.webRtcPeer.dispose();
+                _this.webRtcPeer = null;
+                var message = {
+                    id: 'stop'
+                };
+                // console.log('[sendMessage] : ', message);
+                _this.sendMessage(message);
+            }
+        };
+        this.startResponse = function (message) {
+            console.info('[startResponse] SDP Answer received from Kurento Client; process in WebRtcPeer');
+            _this.webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
+                if (error) {
+                    return console.error(error);
+                }
+            });
+        };
+        this.onIceCandidate = function (candidate) {
+            console.log('[onIceCandidate] Local candidate: ' + JSON.stringify(candidate));
+            var message = {
+                id: 'onIceCandidate',
+                candidate: candidate
+            };
+            // console.log('[sendMessage] : ', message);
+            _this.sendMessage(message);
+        };
     }
     WebSocketService.prototype.connect = function (video) {
         var _this = this;
@@ -423,59 +453,51 @@ var WebSocketService = /** @class */ (function () {
         console.info('[start] Create WebRtcPeer');
         var options = {
             remoteVideo: video,
-            mediaConstraints: { audio: true, video: true },
+            mediaConstraints: { audio: false, video: true },
             onicecandidate: this.onIceCandidate
         };
         this.webRtcPeer = kurento_utils__WEBPACK_IMPORTED_MODULE_1__["WebRtcPeer"].WebRtcPeerRecvonly(options, function (error) {
+            var _this = this;
             if (error) {
                 return console.error(error);
             }
             console.info('[WebRtcPeer] Generate SDP Offer');
-            this.webRtcPeer.generateOffer(this.onOffer);
+            this.generateOffer(function (err, offerSdp) {
+                if (err) {
+                    return console.error('Error generating the SDP Offer');
+                }
+                var message = {
+                    id: 'start',
+                    sdpOffer: offerSdp,
+                    useComedia: true,
+                    useSrtp: false
+                };
+                console.info('[onOffer] Received SDP Offer; send message to Kurento Client at ' + location.host);
+                console.info('[onOffer] COMEDIA checkbox is: ' + message.useComedia);
+                console.info('[onOffer] SRTP checkbox is: ' + message.useSrtp);
+                // console.log('[sendMessage] : ', message);
+                _this.sendMessage(message);
+            });
         });
     };
-    WebSocketService.prototype.stop = function () {
-        console.info('[stop] Stop video playback');
-        if (this.webRtcPeer) {
-            this.webRtcPeer.dispose();
-            this.webRtcPeer = null;
-            var message = {
-                id: 'stop'
-            };
-            this.sendMessage(message);
-        }
-    };
-    WebSocketService.prototype.startResponse = function (message) {
-        console.info('[startResponse] SDP Answer received from Kurento Client; process in WebRtcPeer');
-        this.webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
-            if (error) {
-                return console.error(error);
-            }
-        });
-    };
-    WebSocketService.prototype.onIceCandidate = function (candidate) {
-        console.log('[onIceCandidate] Local candidate: ' + JSON.stringify(candidate));
-        var message = {
-            id: 'onIceCandidate',
-            candidate: candidate
-        };
-        this.sendMessage(message);
-    };
-    WebSocketService.prototype.onOffer = function (error, offerSdp) {
-        if (error) {
-            return console.error('Error generating the SDP Offer');
-        }
-        var message = {
-            id: 'start',
-            sdpOffer: offerSdp,
-            useComedia: true,
-            useSrtp: false
-        };
-        console.info('[onOffer] Received SDP Offer; send message to Kurento Client at ' + location.host);
-        console.info('[onOffer] COMEDIA checkbox is: ' + message.useComedia);
-        console.info('[onOffer] SRTP checkbox is: ' + message.useSrtp);
-        this.sendMessage(message);
-    };
+    /* onOffer(error, offerSdp) {
+      if (error) {
+        return console.error('Error generating the SDP Offer');
+      }
+  
+      let message = {
+        id: 'start',
+        sdpOffer: offerSdp,
+        useComedia: true,
+        useSrtp: false
+      };
+  
+      console.info('[onOffer] Received SDP Offer; send message to Kurento Client at ' + location.host);
+      console.info('[onOffer] COMEDIA checkbox is: ' + message.useComedia);
+      console.info('[onOffer] SRTP checkbox is: ' + message.useSrtp);
+      // console.log('[sendMessage] : ', message);
+      this.sendMessage(message);
+    } */
     WebSocketService.prototype.sendMessage = function (message) {
         console.info('[sendMessage] message: ' + message);
         var jsonMessage = JSON.stringify(message);
