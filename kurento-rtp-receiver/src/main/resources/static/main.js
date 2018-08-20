@@ -413,6 +413,22 @@ var WebSocketService = /** @class */ (function () {
             // console.log('[sendMessage] : ', message);
             _this.sendMessage(message);
         };
+        this.onOffer = function (error, offerSdp) {
+            if (error) {
+                return console.error('Error generating the SDP Offer');
+            }
+            var message = {
+                id: 'start',
+                sdpOffer: offerSdp,
+                useComedia: true,
+                useSrtp: false
+            };
+            console.info('[onOffer] Received SDP Offer; send message to Kurento Client at ' + location.host);
+            console.info('[onOffer] COMEDIA checkbox is: ' + message.useComedia);
+            console.info('[onOffer] SRTP checkbox is: ' + message.useSrtp);
+            // console.log('[sendMessage] : ', message);
+            _this.sendMessage(message);
+        };
     }
     WebSocketService.prototype.connect = function (video) {
         var _this = this;
@@ -450,6 +466,7 @@ var WebSocketService = /** @class */ (function () {
         };
     };
     WebSocketService.prototype.start = function (video) {
+        var _this = this;
         console.info('[start] Create WebRtcPeer');
         var options = {
             remoteVideo: video,
@@ -457,12 +474,11 @@ var WebSocketService = /** @class */ (function () {
             onicecandidate: this.onIceCandidate
         };
         this.webRtcPeer = kurento_utils__WEBPACK_IMPORTED_MODULE_1__["WebRtcPeer"].WebRtcPeerRecvonly(options, function (error) {
-            var _this = this;
             if (error) {
                 return console.error(error);
             }
             console.info('[WebRtcPeer] Generate SDP Offer');
-            this.generateOffer(function (err, offerSdp) {
+            _this.webRtcPeer.generateOffer(function (err, offerSdp) {
                 if (err) {
                     return console.error('Error generating the SDP Offer');
                 }
@@ -480,26 +496,9 @@ var WebSocketService = /** @class */ (function () {
             });
         });
     };
-    /* onOffer(error, offerSdp) {
-      if (error) {
-        return console.error('Error generating the SDP Offer');
-      }
-  
-      let message = {
-        id: 'start',
-        sdpOffer: offerSdp,
-        useComedia: true,
-        useSrtp: false
-      };
-  
-      console.info('[onOffer] Received SDP Offer; send message to Kurento Client at ' + location.host);
-      console.info('[onOffer] COMEDIA checkbox is: ' + message.useComedia);
-      console.info('[onOffer] SRTP checkbox is: ' + message.useSrtp);
-      // console.log('[sendMessage] : ', message);
-      this.sendMessage(message);
-    } */
     WebSocketService.prototype.sendMessage = function (message) {
         console.info('[sendMessage] message: ' + message);
+        console.log(message);
         var jsonMessage = JSON.stringify(message);
         this.ws.send(jsonMessage);
     };
