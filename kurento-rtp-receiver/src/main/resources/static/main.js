@@ -156,7 +156,7 @@ module.exports = "#map {\r\n    height: 75vh;\r\n    border: 1px solid seagreen;
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = "<div id=\"map\"></div>\r\n<div id=\"info\">\r\n    <input #lat id=\"lat\" type=\"text\" placeholder=\"lat (Decimal)\"><input #lng id=\"lng\" type=\"text\" placeholder=\"lng (Decimal)\">\r\n    <br>\r\n    <input #alt id=\"alt\" type=\"number\" placeholder=\"alt (m)\" required>\r\n    <input #brng id=\"bearing\" type=\"number\" placeholder=\"bearing (deg)\">\r\n    <br>\r\n    <button class=\"btn\" type=\"submit\" (click)=\"startConnection()\">Connect</button>\r\n    <button class=\"btn\" type=\"submit\" (click)=\"generateVideoLayer(lat.value, lng.value, alt.value, brng.value)\">Sumbit</button>\r\n</div>\r\n<!-- hidden video element: source of video for distortableVideoOverlay plugin -->\r\n<!-- Add style attribute: display: none;-->\r\n<div id=\"dronefootagesource\">\r\n    <video src=\"../../assets/video/breaking-waves.mp4\" autoplay loop alt=\"breaking waves\"></video>\r\n</div>"
+module.exports = "<div id=\"map\"></div>\r\n<div id=\"info\">\r\n    <input #lat id=\"lat\" type=\"text\" placeholder=\"lat (Decimal)\"><input #lng id=\"lng\" type=\"text\" placeholder=\"lng (Decimal)\">\r\n    <br>\r\n    <input #alt id=\"alt\" type=\"number\" placeholder=\"alt (m)\" required>\r\n    <input #brng id=\"bearing\" type=\"number\" placeholder=\"bearing (deg)\">\r\n    <br>\r\n    <button class=\"btn\" type=\"submit\" (click)=\"startConnection()\">Connect</button>\r\n    <button class=\"btn\" type=\"submit\" (click)=\"generateVideoLayer(lat.value, lng.value, alt.value, brng.value)\">Sumbit</button>\r\n</div>\r\n<!-- hidden video element: source of video for distortableVideoOverlay plugin -->\r\n<!-- Add style attribute: display: none;-->\r\n<div id=\"dronefootagesource\">\r\n    <video id=\"video\" autoplay alt=\"breaking waves\"></video>\r\n</div>"
 
 /***/ }),
 
@@ -220,7 +220,7 @@ var MapComponent = /** @class */ (function () {
     MapComponent.prototype.generateVideoLayer = function (lat1, lng1, alt, hding) {
         this.getCorners(lat1, lng1, alt, hding);
         // const waves = L.distortableVideoOverlay('../../assets/video/breaking-waves.mp4', this.corners, {opacity: 0.6}).addTo(this.map);
-        var waves = leaflet__WEBPACK_IMPORTED_MODULE_2__["distortableVideoOverlay"](document.querySelector('video'), this.corners, { opacity: 0.6 }).addTo(this.map);
+        var waves = leaflet__WEBPACK_IMPORTED_MODULE_2__["distortableVideoOverlay"](document.getElementById('video'), this.corners, { opacity: 0.6 }).addTo(this.map);
     };
     MapComponent.prototype.startConnection = function () {
         this.socketService.connect(document.querySelector('video'));
