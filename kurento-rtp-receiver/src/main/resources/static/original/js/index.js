@@ -76,6 +76,12 @@ ws.onmessage = function(message)
   }
 }
 
+// -----------------------------------------
+// Called from setState(I_CAN_START)
+// TODO: call this fuction on page load (angular app)
+// Get video ports to begin stream with
+// -----------------------------------------
+
 function start()
 {
   // Disable start button
