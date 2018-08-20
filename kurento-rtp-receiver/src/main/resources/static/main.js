@@ -438,7 +438,7 @@ var WebSocketService = /** @class */ (function () {
             console.info('Received message: ' + message.data);
             switch (parsedMessage.id) {
                 case 'startResponse':
-                    // startResponse(parsedMessage);
+                    _this.startResponse(parsedMessage);
                     break;
                 case 'error':
                     console.error('Error message from server: ' + parsedMessage.message);
