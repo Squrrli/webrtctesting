@@ -156,7 +156,7 @@ module.exports = "#map {\r\n    height: 75vh;\r\n    border: 1px solid seagreen;
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-module.exports = "<div id=\"map\"></div>\r\n<div id=\"info\">\r\n    <input #lat id=\"lat\" type=\"text\" placeholder=\"lat (Decimal)\"><input #lng id=\"lng\" type=\"text\" placeholder=\"lng (Decimal)\">\r\n    <br>\r\n    <input #alt id=\"alt\" type=\"number\" placeholder=\"alt (m)\" required>\r\n    <input #brng id=\"bearing\" type=\"number\" placeholder=\"bearing (deg)\">\r\n    <br>\r\n    <button class=\"btn\" type=\"submit\" (click)=\"generateVideoLayer(lat.value, lng.value, alt.value, brng.value)\">Sumbit</button>\r\n</div>\r\n<!-- hidden video element: source of video for distortableVideoOverlay plugin -->\r\n<div style=\"display: none;\" id=\"drone footage source\">\r\n    <video src=\"../../assets/video/breaking-waves.mp4\" autoplay loop alt=\"breaking waves\"></video>\r\n</div>"
+module.exports = "<div id=\"map\"></div>\r\n<div id=\"info\">\r\n    <input #lat id=\"lat\" type=\"text\" placeholder=\"lat (Decimal)\"><input #lng id=\"lng\" type=\"text\" placeholder=\"lng (Decimal)\">\r\n    <br>\r\n    <input #alt id=\"alt\" type=\"number\" placeholder=\"alt (m)\" required>\r\n    <input #brng id=\"bearing\" type=\"number\" placeholder=\"bearing (deg)\">\r\n    <br>\r\n    <button class=\"btn\" type=\"submit\" (click)=\"startConnection()\">Connect</button>\r\n    <button class=\"btn\" type=\"submit\" (click)=\"generateVideoLayer(lat.value, lng.value, alt.value, brng.value)\">Sumbit</button>\r\n</div>\r\n<!-- hidden video element: source of video for distortableVideoOverlay plugin -->\r\n<div style=\"display: none;\" id=\"drone footage source\">\r\n    <video src=\"../../assets/video/breaking-waves.mp4\" autoplay loop alt=\"breaking waves\"></video>\r\n</div>"
 
 /***/ }),
 
@@ -175,7 +175,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var leaflet__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! leaflet */ "./node_modules/leaflet/dist/leaflet-src.js");
 /* harmony import */ var leaflet__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(leaflet__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var leaflet_distortable_video__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! leaflet-distortable-video */ "./node_modules/leaflet-distortable-video/dist/index.js");
-/* harmony import */ var _stream_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../stream.service */ "./src/app/stream.service.ts");
+/* harmony import */ var _web_socket_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../web-socket.service */ "./src/app/web-socket.service.ts");
 var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -193,8 +193,8 @@ var __metadata = (undefined && undefined.__metadata) || function (k, v) {
 
 var MapComponent = /** @class */ (function () {
     // inject WebSocketService to be able to access messages from Kurento Media Sever
-    function MapComponent(stream) {
-        this.stream = stream;
+    function MapComponent(socketService) {
+        this.socketService = socketService;
         this.defaultZoom = 12;
         this.defaultCoords = leaflet__WEBPACK_IMPORTED_MODULE_2__["latLng"](51.5777, -9.0080);
         this.mapOptions = {
@@ -214,10 +214,6 @@ var MapComponent = /** @class */ (function () {
         this.FOV = 94; // fov of zenmuse x3 according to DJI website
     }
     MapComponent.prototype.ngOnInit = function () {
-        // subscribe to socket message observable
-        this.stream.messages.subscribe(function (msg) {
-            console.log(msg);
-        });
         this.map = leaflet__WEBPACK_IMPORTED_MODULE_2__["map"]('map').setView(this.defaultCoords, this.defaultZoom);
         leaflet__WEBPACK_IMPORTED_MODULE_2__["tileLayer"]('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', this.mapOptions).addTo(this.map);
     };
@@ -225,6 +221,9 @@ var MapComponent = /** @class */ (function () {
         this.getCorners(lat1, lng1, alt, hding);
         // const waves = L.distortableVideoOverlay('../../assets/video/breaking-waves.mp4', this.corners, {opacity: 0.6}).addTo(this.map);
         var waves = leaflet__WEBPACK_IMPORTED_MODULE_2__["distortableVideoOverlay"](document.querySelector('video'), this.corners, { opacity: 0.6 }).addTo(this.map);
+    };
+    MapComponent.prototype.startConnection = function () {
+        this.socketService.connect(document.querySelector('video'));
     };
     /* ----------------------------------
      * calculate coords of corners given drone center c, and altitude alt
@@ -300,7 +299,7 @@ var MapComponent = /** @class */ (function () {
             template: __webpack_require__(/*! ./map.component.html */ "./src/app/map/map.component.html"),
             styles: [__webpack_require__(/*! ./map.component.css */ "./src/app/map/map.component.css")]
         }),
-        __metadata("design:paramtypes", [_stream_service__WEBPACK_IMPORTED_MODULE_4__["StreamService"]])
+        __metadata("design:paramtypes", [_web_socket_service__WEBPACK_IMPORTED_MODULE_4__["WebSocketService"]])
     ], MapComponent);
     return MapComponent;
 }());
@@ -335,11 +334,11 @@ var __metadata = (undefined && undefined.__metadata) || function (k, v) {
 var StreamService = /** @class */ (function () {
     function StreamService(wsService) {
         this.wsService = wsService;
-        this.messages = wsService
-            .connect()
-            .map(function (response) {
-            return response;
-        });
+        /*  this.messages = <Subject<any>>wsService
+           .connect()
+           .map((response: any): any => {
+             return response;
+           }); */
     }
     StreamService.prototype.sendMessage = function (msg) {
         this.messages.next(msg);
@@ -368,11 +367,7 @@ var StreamService = /** @class */ (function () {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "WebSocketService", function() { return WebSocketService; });
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
-/* harmony import */ var socket_io_client__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! socket.io-client */ "./node_modules/socket.io-client/lib/index.js");
-/* harmony import */ var socket_io_client__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(socket_io_client__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var rxjs_Observable__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/Observable */ "../node_modules/rxjs-compat/_esm5/Observable.js");
-/* harmony import */ var rxjs_Rx__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/Rx */ "../node_modules/rxjs-compat/_esm5/Rx.js");
-/* harmony import */ var _environments_environment__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../environments/environment */ "./src/environments/environment.ts");
+/* harmony import */ var kurento_utils__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! kurento-utils */ "./node_modules/kurento-utils/lib/index.js");
 var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -384,33 +379,107 @@ var __metadata = (undefined && undefined.__metadata) || function (k, v) {
 };
 
 
-
-
-
 var WebSocketService = /** @class */ (function () {
     function WebSocketService() {
+        // private webSocket;
+        this.ws = new WebSocket('wss://' + location.host + '/player');
     }
-    WebSocketService.prototype.connect = function () {
+    WebSocketService.prototype.connect = function (video) {
         var _this = this;
-        // test Websocket for Java Rtp Receiver tutorial
-        var ws = new WebSocket('wss://' + location.host + '/player');
-        console.log('connect to ws at ' + _environments_environment__WEBPACK_IMPORTED_MODULE_4__["environment"].ws_url);
-        this.socket = socket_io_client__WEBPACK_IMPORTED_MODULE_1__(_environments_environment__WEBPACK_IMPORTED_MODULE_4__["environment"].ws_url);
-        var observable = new rxjs_Observable__WEBPACK_IMPORTED_MODULE_2__["Observable"](function (obs) {
-            _this.socket.on('message', function (data) {
-                console.log('Message received');
-                obs.next(data);
-            });
-            return function () {
-                _this.socket.disoconnect();
-            };
-        });
-        var observer = {
-            next: function (data) {
-                _this.socket.emit('message', JSON.stringify(data));
-            },
+        this.start(video);
+        this.ws.onmessage = function (message) {
+            var parsedMessage = JSON.parse(message.data);
+            console.info('Received message: ' + message.data);
+            switch (parsedMessage.id) {
+                case 'startResponse':
+                    // startResponse(parsedMessage);
+                    break;
+                case 'error':
+                    console.error('Error message from server: ' + parsedMessage.message);
+                    break;
+                case 'playEnd':
+                    console.info('Play End');
+                    break;
+                case 'iceCandidate':
+                    _this.webRtcPeer.addIceCandidate(parsedMessage.candidate, function (error) {
+                        if (error) {
+                            return console.error('Error adding candidate: ' + error);
+                        }
+                    });
+                    break;
+                case 'msgConnInfo':
+                    console.info('msgConnInfo: ' + parsedMessage.text);
+                    break;
+                case 'msgSdpText':
+                    console.info('msgSdpText: ' + parsedMessage.text);
+                    break;
+                default:
+                    console.error('Unrecognized message', parsedMessage);
+                    break;
+            }
         };
-        return rxjs_Rx__WEBPACK_IMPORTED_MODULE_3__["Subject"].create(observer, observable);
+    };
+    WebSocketService.prototype.start = function (video) {
+        console.info('[start] Create WebRtcPeer');
+        var options = {
+            remoteVideo: video,
+            mediaConstraints: { audio: true, video: true },
+            onicecandidate: this.onIceCandidate
+        };
+        this.webRtcPeer = kurento_utils__WEBPACK_IMPORTED_MODULE_1__["WebRtcPeer"].WebRtcPeerRecvonly(options, function (error) {
+            if (error) {
+                return console.error(error);
+            }
+            console.info('[WebRtcPeer] Generate SDP Offer');
+            this.webRtcPeer.generateOffer(this.onOffer);
+        });
+    };
+    WebSocketService.prototype.stop = function () {
+        console.info('[stop] Stop video playback');
+        if (this.webRtcPeer) {
+            this.webRtcPeer.dispose();
+            this.webRtcPeer = null;
+            var message = {
+                id: 'stop'
+            };
+            this.sendMessage(message);
+        }
+    };
+    WebSocketService.prototype.startResponse = function (message) {
+        console.info('[startResponse] SDP Answer received from Kurento Client; process in WebRtcPeer');
+        this.webRtcPeer.processAnswer(message.sdpAnswer, function (error) {
+            if (error) {
+                return console.error(error);
+            }
+        });
+    };
+    WebSocketService.prototype.onIceCandidate = function (candidate) {
+        console.log('[onIceCandidate] Local candidate: ' + JSON.stringify(candidate));
+        var message = {
+            id: 'onIceCandidate',
+            candidate: candidate
+        };
+        this.sendMessage(message);
+    };
+    WebSocketService.prototype.onOffer = function (error, offerSdp) {
+        if (error) {
+            return console.error('Error generating the SDP Offer');
+        }
+        var message = {
+            id: 'start',
+            sdpOffer: offerSdp,
+            useComedia: true,
+            useSrtp: false
+        };
+        console.info('[onOffer] Received SDP Offer; send message to Kurento Client at ' + location.host);
+        console.info('[onOffer] COMEDIA checkbox is: ' + message.useComedia);
+        console.info('[onOffer] SRTP checkbox is: ' + message.useSrtp);
+        this.sendMessage(message);
+    };
+    WebSocketService.prototype.sendMessage = function (message) {
+        console.info('[sendMessage] message: ' + message);
+        var jsonMessage = JSON.stringify(message);
+        this.ws.send(jsonMessage);
     };
     WebSocketService = __decorate([
         Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Injectable"])({
@@ -489,17 +558,6 @@ Object(_angular_platform_browser_dynamic__WEBPACK_IMPORTED_MODULE_1__["platformB
 
 module.exports = __webpack_require__(/*! C:\Users\adamom\mapStream\src\main.ts */"./src/main.ts");
 
-
-/***/ }),
-
-/***/ 1:
-/*!********************!*\
-  !*** ws (ignored) ***!
-  \********************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-/* (ignored) */
 
 /***/ })
 
